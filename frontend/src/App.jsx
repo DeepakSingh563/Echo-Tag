@@ -12,7 +12,7 @@ export default function App() {
     fd.append("file", file);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/upload", fd);
+      const res = await axios.post("https://echo-tag-backend.onrender.com/api/upload", fd);
       setMsg(
         `✅ Protected Successfully
 
@@ -32,7 +32,7 @@ File Ref: ${res.data.file}`
     fd.append("file", file);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/detect", fd);
+        const res = await axios.post("https://echo-tag-backend.onrender.com/api/detect", fd);
       setMsg(
         `🚨 Piracy Scan Complete
 
