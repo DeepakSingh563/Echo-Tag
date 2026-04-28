@@ -70,45 +70,128 @@ ${res.data.message ? "\n" + res.data.message : ""}`,
     <div
       style={{
         minHeight: "100vh",
+        background: "linear-gradient(135deg,#eef5ff,#ffffff,#edf4ff)",
         padding: "30px",
-        background: "#eef5ff",
         fontFamily: "Arial",
       }}
     >
       <div
         style={{
-          maxWidth: "900px",
+          maxWidth: "950px",
           margin: "auto",
           background: "white",
+          borderRadius: "24px",
           padding: "40px",
-          borderRadius: "22px",
+          boxShadow: "0 20px 50px rgba(0,0,0,0.08)",
         }}
       >
-        <h1>EchoTag</h1>
-        <p>LSB + DCT + Gemini AI Protection</p>
+        <h1 style={{ fontSize: "52px", margin: 0, color: "#111827" }}>
+          EchoTag
+        </h1>
 
-        <input type="file" onChange={(e) => setFile(e.target.files[0])} />
+        <p
+          style={{
+            color: "#475569",
+            fontSize: "18px",
+            marginTop: "10px",
+          }}
+        >
+          LSB + DCT + Gemini AI Anti-Piracy Protection
+        </p>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
+            gap: "12px",
+            marginTop: "25px",
+            marginBottom: "25px",
+          }}
+        >
+          {[
+            "Invisible Watermark",
+            "Leak Tracing",
+            "Gemini AI Scan",
+            "Image + Video Ready",
+          ].map((item) => (
+            <div
+              key={item}
+              style={{
+                background: "#f8fbff",
+                padding: "16px",
+                borderRadius: "16px",
+                fontWeight: "600",
+              }}
+            >
+              {item}
+            </div>
+          ))}
+        </div>
+
+        <div
+          style={{
+            border: "2px dashed #bfd3ff",
+            padding: "30px",
+            borderRadius: "18px",
+            background: "#f8fbff",
+            textAlign: "center",
+            marginBottom: "20px",
+          }}
+        >
+          <p style={{ color: "#64748b" }}>Upload image or video</p>
+          <input type="file" onChange={(e) => setFile(e.target.files[0])} />
+        </div>
 
         <div
           style={{
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
-            gap: "12px",
-            marginTop: "20px",
+            gap: "14px",
           }}
         >
-          <button onClick={protectContent}>Protect Content</button>
-          <button onClick={checkPiracy}>Check Piracy</button>
+          <button
+            onClick={protectContent}
+            style={{
+              padding: "16px",
+              border: "none",
+              borderRadius: "16px",
+              background: "#2563eb",
+              color: "white",
+              fontSize: "17px",
+              fontWeight: "700",
+              cursor: "pointer",
+            }}
+          >
+            Protect Content
+          </button>
+
+          <button
+            onClick={checkPiracy}
+            style={{
+              padding: "16px",
+              border: "none",
+              borderRadius: "16px",
+              background: "#111827",
+              color: "white",
+              fontSize: "17px",
+              fontWeight: "700",
+              cursor: "pointer",
+            }}
+          >
+            Check Piracy
+          </button>
         </div>
 
         <div
           style={{
-            marginTop: "20px",
+            marginTop: "24px",
+            background: "#0f172a",
+            color: "#e2e8f0",
+            padding: "24px",
+            borderRadius: "18px",
+            minHeight: "180px",
             whiteSpace: "pre-wrap",
-            background: "#111827",
-            color: "white",
-            padding: "20px",
-            borderRadius: "14px",
+            fontFamily: "Consolas, monospace",
           }}
         >
           {msg}
