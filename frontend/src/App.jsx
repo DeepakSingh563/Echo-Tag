@@ -1,98 +1,215 @@
-import { useState } from "react";
-import API from "./api";
+import React, { useState } from "react";
+import axios from "axios";
 
 export default function App() {
   const [file, setFile] = useState(null);
-  const [result, setResult] = useState("");
-  const [secret, setSecret] = useState("");
+  const [msg, setMsg] = useState("Ready to secure your content.");
 
-  // ANALYZE IMAGE
-  const handleAnalyze = async () => {
-    if (!file) return alert("Upload an image first");
+  async function protectContent() {
+    if (!file) {
+      setMsg("Choose a file first.");
+      return;
+    }
 
-    const formData = new FormData();
-    formData.append("file", file);
+    const fd = new FormData();
+    fd.append("file", file);
 
     try {
-      const res = await API.post("/api/scan-image", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const res = await axios.post(
+        "https://echo-tag-backend.onrender.com/api/upload",
+        fd,
+      );
 
-      setResult(JSON.stringify(res.data, null, 2));
-    } catch (err) {
-      console.error(err);
-      setResult("Error analyzing image");
+      setMsg(
+        `✅ Protected Successfully
+
+Method: ${res.data.message}
+User ID: ${res.data.userId}
+File Ref: ${res.data.file}
+Confidence: ${res.data.confidence || 95}%`,
+      );
+    } catch (error) {
+      setMsg("Protection failed. Backend unavailable.");
     }
-  };
+  }
 
-  // DOWNLOAD PROTECTED FILE
-  const handleProtectDownload = async () => {
-    if (!file) return alert("Upload an image first");
+  async function checkPiracy() {
+    if (!file) {
+      setMsg("Choose a file first.");
+      return;
+    }
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("secret", secret || "EchoTag-Protected");
+    const fd = new FormData();
+    fd.append("file", file);
 
     try {
-      const res = await API.post("/api/encode", formData, {
-        responseType: "blob",
-      });
+      const res = await axios.post(
+        "https://echo-tag-backend.onrender.com/api/detect",
+        fd,
+      );
 
-      const url = window.URL.createObjectURL(new Blob([res.data]));
+      if (res.data.pirated) {
+        setMsg(
+          `🚨 Piracy Detected
 
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", "echotag-protected.png");
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to download protected file");
+Method: ${res.data.method}
+Leaked By: ${res.data.piratedBy}
+Confidence: ${res.data.confidence}%
+${res.data.note ? "\nNote: " + res.data.note : ""}`,
+        );
+      } else {
+        setMsg(
+          `✅ No Piracy Found
+
+Method: ${res.data.method}
+Confidence: ${res.data.confidence}%
+${res.data.message ? "\n" + res.data.message : ""}`,
+        );
+      }
+    } catch (error) {
+      setMsg("Detection failed. Backend unavailable.");
     }
-  };
+  }
 
   return (
-    <div style={{ padding: 20, fontFamily: "Arial" }}>
-      <h1>EchoTag</h1>
-
-      {/* Upload */}
-      <input
-        type="file"
-        accept="image/*"
-        onChange={(e) => setFile(e.target.files[0])}
-      />
-
-      {/* Secret input */}
-      <div style={{ marginTop: 10 }}>
-        <input
-          type="text"
-          placeholder="Secret watermark text (optional)"
-          value={secret}
-          onChange={(e) => setSecret(e.target.value)}
-        />
-      </div>
-
-      {/* Buttons */}
-      <div style={{ marginTop: 15 }}>
-        <button onClick={handleAnalyze}>Analyze Image</button>
-
-        <button onClick={handleProtectDownload} style={{ marginLeft: 10 }}>
-          Download Protected File
-        </button>
-      </div>
-
-      {/* Result */}
-      <pre
+    <div
+      style={{
+        minHeight: "100vh",
+        background:
+          "linear-gradient(135deg, rgb(240,246,255), rgb(255,255,255), rgb(238,244,255))",
+        fontFamily: "Arial, sans-serif",
+        padding: "30px",
+      }}
+    >
+      <div
         style={{
-          marginTop: 20,
-          background: "#111",
-          color: "#0f0",
-          padding: 10,
+          maxWidth: "900px",
+          margin: "0 auto",
+          background: "white",
+          borderRadius: "24px",
+          padding: "40px",
+          boxShadow: "0 20px 40px rgba(0,0,0,0.08)",
         }}
       >
-        {result}
-      </pre>
+        <div style={{ marginBottom: "25px" }}>
+          <h1
+            style={{
+              fontSize: "48px",
+              margin: "0",
+              color: "#111827",
+            }}
+          >
+            EchoTag
+          </h1>
+
+          <p
+            style={{
+              marginTop: "10px",
+              color: "#475569",
+              fontSize: "18px",
+            }}
+          >
+            AI Powered Anti-Piracy Protection using LSB + DCT + Gemini Layer
+          </p>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
+            gap: "12px",
+            marginBottom: "25px",
+          }}
+        >
+          {[
+            "Invisible Watermark",
+            "Leak Tracing",
+            "AI Detection",
+            "Image + Video Ready",
+          ].map((item) => (
+            <div
+              key={item}
+              style={{
+                background: "#f8fbff",
+                padding: "14px",
+                borderRadius: "14px",
+                fontWeight: "600",
+              }}
+            >
+              {item}
+            </div>
+          ))}
+        </div>
+
+        <div
+          style={{
+            border: "2px dashed #bfd3ff",
+            padding: "28px",
+            borderRadius: "18px",
+            textAlign: "center",
+            marginBottom: "20px",
+            background: "#f8fbff",
+          }}
+        >
+          <p style={{ color: "#64748b" }}>Upload image or video</p>
+          <input type="file" onChange={(e) => setFile(e.target.files[0])} />
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "14px",
+          }}
+        >
+          <button
+            onClick={protectContent}
+            style={{
+              padding: "16px",
+              border: "none",
+              borderRadius: "14px",
+              background: "#2563eb",
+              color: "white",
+              fontSize: "17px",
+              fontWeight: "700",
+              cursor: "pointer",
+            }}
+          >
+            Protect Content
+          </button>
+
+          <button
+            onClick={checkPiracy}
+            style={{
+              padding: "16px",
+              border: "none",
+              borderRadius: "14px",
+              background: "#111827",
+              color: "white",
+              fontSize: "17px",
+              fontWeight: "700",
+              cursor: "pointer",
+            }}
+          >
+            Check Piracy
+          </button>
+        </div>
+
+        <div
+          style={{
+            marginTop: "24px",
+            background: "#0f172a",
+            color: "#e2e8f0",
+            padding: "24px",
+            borderRadius: "18px",
+            minHeight: "170px",
+            whiteSpace: "pre-wrap",
+            fontFamily: "Consolas, monospace",
+          }}
+        >
+          {msg}
+        </div>
+      </div>
     </div>
   );
 }
