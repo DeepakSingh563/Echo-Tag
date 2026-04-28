@@ -7,9 +7,20 @@ from scanner import embed_watermark, extract_watermark
 from video_scanner import scan_video
 from gemini_ai import analyze_image
 
+# ---------------- GEMINI CONFIG ----------------
+import google.generativeai as genai
+
+# Render + local safe config
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+print("GEMINI KEY LOADED:", "YES" if GEMINI_API_KEY else "NO")
+
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+
 app = FastAPI()
 
-# CORS (frontend connection fix)
+# ---------------- CORS ----------------
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -42,7 +53,7 @@ async def upload(file: UploadFile = File(...)):
         "confidence": 96
     }
 
-# ---------------- DETECT (FIXED CORE LOGIC) ----------------
+# ---------------- DETECT ----------------
 @app.post("/api/detect")
 async def detect(file: UploadFile = File(...)):
     path = file.filename
@@ -55,7 +66,7 @@ async def detect(file: UploadFile = File(...)):
     # ---------------- IMAGE ----------------
     if ext in ["jpg", "jpeg", "png", "bmp", "webp"]:
 
-        # STEP 1: check watermark
+        # STEP 1: WATERMARK CHECK
         uid = extract_watermark(path)
 
         if uid:
@@ -66,8 +77,11 @@ async def detect(file: UploadFile = File(...)):
                 "confidence": 97
             }
 
-        # STEP 2: AI analysis (Gemini)
-        ai_result = analyze_image(path).lower()
+        # STEP 2: GEMINI AI ANALYSIS
+        try:
+            ai_result = analyze_image(path).lower()
+        except:
+            ai_result = "gemini unavailable"
 
         suspicious_keywords = [
             "copied",
@@ -75,14 +89,13 @@ async def detect(file: UploadFile = File(...)):
             "stolen",
             "pirated",
             "screenshot",
-            "cropped watermark",
+            "cropped",
             "edited",
-            "leak"
+            "leak",
+            "watermark removed"
         ]
 
-        is_suspicious = any(word in ai_result for word in suspicious_keywords)
-
-        if is_suspicious:
+        if any(word in ai_result for word in suspicious_keywords):
             return {
                 "pirated": True,
                 "method": "AI Suspicion (Gemini)",
@@ -91,7 +104,7 @@ async def detect(file: UploadFile = File(...)):
                 "aiResult": ai_result
             }
 
-        # STEP 3: unknown content
+        # STEP 3: UNKNOWN CONTENT
         return {
             "pirated": None,
             "method": "Unverified Content (No Watermark)",
@@ -101,10 +114,9 @@ async def detect(file: UploadFile = File(...)):
 
     # ---------------- VIDEO ----------------
     if ext in ["mp4", "mov", "avi", "mkv"]:
-        result = scan_video(path)
-        return result
+        return scan_video(path)
 
-    # ---------------- OTHER ----------------
+    # ---------------- DEFAULT ----------------
     return {
         "pirated": False,
         "message": "Unsupported file type"
