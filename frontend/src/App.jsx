@@ -3,26 +3,37 @@ import axios from "axios";
 
 export default function App() {
   const [file, setFile] = useState(null);
-  const [msg, setMsg] = useState("Ready to secure your content.");
+  const [msg, setMsg] =
+    useState(
+      "Ready to secure your content."
+    );
+
+  const API =
+    "https://echo-tag-backend.onrender.com";
 
   async function protectContent() {
-    if (!file) return setMsg("Choose a file first.");
+    if (!file) {
+      setMsg("Choose a file first.");
+      return;
+    }
 
     const fd = new FormData();
     fd.append("file", file);
 
     try {
-      const res = await axios.post(
-        "https://echo-tag-backend.onrender.com/api/upload",
-        fd,
-      );
+      const res =
+        await axios.post(
+          `${API}/api/upload`,
+          fd
+        );
 
       setMsg(
-        `✅ Protected Successfully
+`✅ Protected Successfully
 
-Method: ${res.data.message}
-User ID: ${res.data.userId}
-Confidence: ${res.data.confidence || 95}%`,
+Watermark: ${res.data.watermark}
+Trace User: ${res.data.userTrace}
+Confidence: ${res.data.confidence}%
+File Ref: ${res.data.file}`
       );
     } catch {
       setMsg("Protection failed.");
@@ -30,35 +41,35 @@ Confidence: ${res.data.confidence || 95}%`,
   }
 
   async function checkPiracy() {
-    if (!file) return setMsg("Choose a file first.");
+    if (!file) {
+      setMsg("Choose a file first.");
+      return;
+    }
 
     const fd = new FormData();
     fd.append("file", file);
 
     try {
-      const res = await axios.post(
-        "https://echo-tag-backend.onrender.com/api/detect",
-        fd,
-      );
+      const res =
+        await axios.post(
+          `${API}/api/detect`,
+          fd
+        );
 
       if (res.data.pirated) {
         setMsg(
-          `🚨 Piracy Detected
+`🚨 Piracy Detected
 
 Method: ${res.data.method}
 Leaked By: ${res.data.piratedBy}
-Confidence: ${res.data.confidence}%
-${res.data.aiResult ? "\nGemini Verdict: " + res.data.aiResult : ""}
-${res.data.note ? "\nNote: " + res.data.note : ""}`,
+Confidence: ${res.data.confidence}%`
         );
       } else {
         setMsg(
-          `✅ No Piracy Found
+`✅ No Piracy Found
 
 Method: ${res.data.method}
-Confidence: ${res.data.confidence}%
-${res.data.aiResult ? "\nGemini Verdict: " + res.data.aiResult : ""}
-${res.data.message ? "\n" + res.data.message : ""}`,
+Confidence: ${res.data.confidence}%`
         );
       }
     } catch {
@@ -70,22 +81,31 @@ ${res.data.message ? "\n" + res.data.message : ""}`,
     <div
       style={{
         minHeight: "100vh",
-        background: "linear-gradient(135deg,#eef5ff,#ffffff,#edf4ff)",
+        background:
+          "linear-gradient(135deg,#eef4ff,#ffffff,#edf5ff)",
         padding: "30px",
-        fontFamily: "Arial",
+        fontFamily:
+          "Arial, sans-serif"
       }}
     >
       <div
         style={{
           maxWidth: "950px",
-          margin: "auto",
+          margin: "0 auto",
           background: "white",
           borderRadius: "24px",
           padding: "40px",
-          boxShadow: "0 20px 50px rgba(0,0,0,0.08)",
+          boxShadow:
+            "0 20px 50px rgba(0,0,0,0.08)"
         }}
       >
-        <h1 style={{ fontSize: "52px", margin: 0, color: "#111827" }}>
+        <h1
+          style={{
+            fontSize: "54px",
+            margin: 0,
+            color: "#111827"
+          }}
+        >
           EchoTag
         </h1>
 
@@ -93,34 +113,39 @@ ${res.data.message ? "\n" + res.data.message : ""}`,
           style={{
             color: "#475569",
             fontSize: "18px",
-            marginTop: "10px",
+            marginTop: "10px"
           }}
         >
-          LSB + DCT + Gemini AI Anti-Piracy Protection
+          AI Anti-Piracy Protection
+          using LSB + DCT
         </p>
 
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
+            gridTemplateColumns:
+              "repeat(auto-fit,minmax(180px,1fr))",
             gap: "12px",
             marginTop: "25px",
-            marginBottom: "25px",
+            marginBottom: "25px"
           }}
         >
           {[
             "Invisible Watermark",
             "Leak Tracing",
-            "Gemini AI Scan",
-            "Image + Video Ready",
+            "Piracy Detection",
+            "Image + Video Ready"
           ].map((item) => (
             <div
               key={item}
               style={{
-                background: "#f8fbff",
+                background:
+                  "#f8fbff",
                 padding: "16px",
-                borderRadius: "16px",
-                fontWeight: "600",
+                borderRadius:
+                  "16px",
+                fontWeight:
+                  "600"
               }}
             >
               {item}
@@ -130,52 +155,82 @@ ${res.data.message ? "\n" + res.data.message : ""}`,
 
         <div
           style={{
-            border: "2px dashed #bfd3ff",
+            border:
+              "2px dashed #bfd3ff",
             padding: "30px",
-            borderRadius: "18px",
-            background: "#f8fbff",
-            textAlign: "center",
-            marginBottom: "20px",
+            borderRadius:
+              "18px",
+            background:
+              "#f8fbff",
+            textAlign:
+              "center",
+            marginBottom:
+              "22px"
           }}
         >
-          <p style={{ color: "#64748b" }}>Upload image or video</p>
-          <input type="file" onChange={(e) => setFile(e.target.files[0])} />
+          <p>
+            Upload image or video
+          </p>
+
+          <input
+            type="file"
+            onChange={(e) =>
+              setFile(
+                e.target.files[0]
+              )
+            }
+          />
         </div>
 
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "14px",
+            gridTemplateColumns:
+              "1fr 1fr",
+            gap: "14px"
           }}
         >
           <button
-            onClick={protectContent}
+            onClick={
+              protectContent
+            }
             style={{
-              padding: "16px",
+              padding:
+                "16px",
               border: "none",
-              borderRadius: "16px",
-              background: "#2563eb",
-              color: "white",
-              fontSize: "17px",
-              fontWeight: "700",
-              cursor: "pointer",
+              borderRadius:
+                "16px",
+              background:
+                "#2563eb",
+              color:
+                "white",
+              fontWeight:
+                "700",
+              cursor:
+                "pointer"
             }}
           >
             Protect Content
           </button>
 
           <button
-            onClick={checkPiracy}
+            onClick={
+              checkPiracy
+            }
             style={{
-              padding: "16px",
+              padding:
+                "16px",
               border: "none",
-              borderRadius: "16px",
-              background: "#111827",
-              color: "white",
-              fontSize: "17px",
-              fontWeight: "700",
-              cursor: "pointer",
+              borderRadius:
+                "16px",
+              background:
+                "#111827",
+              color:
+                "white",
+              fontWeight:
+                "700",
+              cursor:
+                "pointer"
             }}
           >
             Check Piracy
@@ -184,14 +239,22 @@ ${res.data.message ? "\n" + res.data.message : ""}`,
 
         <div
           style={{
-            marginTop: "24px",
-            background: "#0f172a",
-            color: "#e2e8f0",
-            padding: "24px",
-            borderRadius: "18px",
-            minHeight: "180px",
-            whiteSpace: "pre-wrap",
-            fontFamily: "Consolas, monospace",
+            marginTop:
+              "24px",
+            background:
+              "#0f172a",
+            color:
+              "#e2e8f0",
+            padding:
+              "24px",
+            borderRadius:
+              "18px",
+            minHeight:
+              "180px",
+            whiteSpace:
+              "pre-wrap",
+            fontFamily:
+              "Consolas, monospace"
           }}
         >
           {msg}

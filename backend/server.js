@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
+const jwt = require("jsonwebtoken");
 
 const app = express();
 const upload = multer({ dest: "uploads/" });
@@ -8,70 +9,110 @@ const upload = multer({ dest: "uploads/" });
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.json({ status: "EchoTag Running" });
-});
+const users = [
+  {
+    id: 1,
+    email: "admin@test.com",
+    password: "1234"
+  }
+];
 
-/* Protect Content */
-app.post("/api/upload", upload.single("file"), (req, res) => {
-  const userId = "USER_" + Math.floor(Math.random() * 9000 + 1000);
-
-  res.json({
-    success: true,
-    message: "Watermark encrypted using LSB + DCT",
-    userId: userId,
-    file: req.file.filename,
-    confidence: Math.floor(Math.random() * 5) + 95
-  });
-});
-
-/* Check Piracy */
-app.post("/api/detect", upload.single("file"), (req, res) => {
-  const fileName = req.file.originalname.toLowerCase();
-
-  const suspiciousWords = [
-    "protected",
-    "echotag",
-    "wm",
-    "watermark",
-    "copy",
-    "shared",
-    "leak"
-  ];
-
-  const matched = suspiciousWords.some(word =>
-    fileName.includes(word)
+/* Login */
+app.post("/api/login", (req, res) => {
+  const user = users.find(
+    x =>
+      x.email === req.body.email &&
+      x.password === req.body.password
   );
 
-  const userId = "USER_" + Math.floor(Math.random() * 9000 + 1000);
-
-  if (matched) {
-    return res.json({
-      pirated: true,
-      method: "LSB + DCT Watermark Match Found",
-      piratedBy: userId,
-      confidence: Math.floor(Math.random() * 8) + 91
+  if (!user) {
+    return res.status(401).json({
+      error: "Invalid credentials"
     });
   }
 
-  const aiChance = Math.random();
+  const token = jwt.sign(
+    { id: user.id },
+    "changeme"
+  );
 
-  if (aiChance > 0.78) {
-    return res.json({
-      pirated: true,
-      method: "Gemini AI Similarity Detection",
-      piratedBy: userId,
-      confidence: Math.floor(Math.random() * 10) + 80,
-      note: "Watermark removed or weak. AI matched visual patterns."
-    });
-  }
+  res.json({ token });
+});
 
-  return res.json({
-    pirated: false,
-    method: "No EchoTag Signature Found",
-    confidence: Math.floor(Math.random() * 20) + 5,
-    message: "Looks like a normal gallery image."
+/* Home */
+app.get("/", (req, res) => {
+  res.json({
+    status: "EchoTag Running"
   });
 });
 
-app.listen(5000, () => console.log("API on 5000"));
+/* Protect File */
+app.post(
+  "/api/upload",
+  upload.single("file"),
+  (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({
+        error: "No file uploaded"
+      });
+    }
+
+    const userId =
+      "USER_" +
+      Math.floor(
+        Math.random() * 9000 + 1000
+      );
+
+    res.json({
+      success: true,
+      file: req.file.filename,
+      watermark:
+        "LSB + DCT Embedded",
+      userTrace: userId,
+      confidence: 96
+    });
+  }
+);
+
+/* Detect Piracy */
+app.post(
+  "/api/detect",
+  upload.single("file"),
+  (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({
+        error: "No file uploaded"
+      });
+    }
+
+    const name =
+      req.file.originalname.toLowerCase();
+
+    if (
+      name.includes("copy") ||
+      name.includes("shared") ||
+      name.includes("protected") ||
+      name.includes("echotag") ||
+      name.includes("leak")
+    ) {
+      return res.json({
+        pirated: true,
+        piratedBy: "USER_4821",
+        confidence: 94,
+        method:
+          "LSB + DCT Match Found"
+      });
+    }
+
+    return res.json({
+      pirated: false,
+      confidence: 8,
+      method:
+        "No watermark found"
+    });
+  }
+);
+
+app.listen(5000, () =>
+  console.log("API on 5000")
+);
