@@ -5,12 +5,29 @@ export default function App() {
   const [file, setFile] = useState(null);
   const [msg, setMsg] = useState("Ready to secure your content.");
   const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState(null);
+  const [status, setStatus] = useState("idle"); 
+  const [logs, setLogs] = useState([]);
 
   const API = "https://echo-tag-backend.onrender.com";
 
+  // ---------------- FILE HANDLER ----------------
+  function handleFile(e) {
+    const f = e.target.files[0];
+    setFile(f);
+
+    if (f) {
+      setPreview(URL.createObjectURL(f));
+      setMsg("File ready for analysis.");
+      setStatus("idle");
+    }
+  }
+
+  // ---------------- PROTECT ----------------
   async function protectContent() {
     if (!file) {
-      setMsg("Choose a file first.");
+      setMsg("⚠ Choose a file first.");
+      setStatus("warning");
       return;
     }
 
@@ -20,31 +37,34 @@ export default function App() {
     try {
       setLoading(true);
 
-      const res = await axios.post(
-        `${API}/api/upload`,
-        fd
-      );
+      const res = await axios.post(`${API}/api/upload`, fd);
+
+      setStatus("success");
 
       setMsg(
-`✅ CONTENT PROTECTED SUCCESSFULLY
+`✅ CONTENT PROTECTED
 
 📌 Watermark ID: ${res.data.watermark || "ECHOTAG_SECURE"}
-👤 Owner Trace: ${res.data.userTrace || "Verified User"}
+👤 Owner: ${res.data.userId || "USER"}
+📁 File: ${res.data.file || file.name}
 📊 Confidence: ${res.data.confidence || 99}%
-📁 File Name: ${res.data.file || file.name}
 
-🔒 Invisible protection applied successfully.`
+🔒 Content is now traceable and secured.`
       );
-    } catch {
-      setMsg("❌ Protection failed.");
+
+    } catch (err) {
+      setStatus("error");
+      setMsg("❌ Protection failed. Server error.");
     } finally {
       setLoading(false);
     }
   }
 
+  // ---------------- DETECT ----------------
   async function checkPiracy() {
     if (!file) {
-      setMsg("Choose a file first.");
+      setMsg("⚠ Choose a file first.");
+      setStatus("warning");
       return;
     }
 
@@ -54,124 +74,160 @@ export default function App() {
     try {
       setLoading(true);
 
-      const res = await axios.post(
-        `${API}/api/detect`,
-        fd
-      );
+      const res = await axios.post(`${API}/api/detect`, fd);
 
-      // FORCE GOOD OUTPUT FORMAT
-      if (
-        res.data.pirated === true ||
-        file.name.toLowerCase().includes("pirated") ||
-        file.name.toLowerCase().includes("leak")
-      ) {
-        setMsg(
-`🚨 PIRATED CONTENT DETECTED 🚨
+      const isPirated = res.data.pirated === true;
+      const isUnknown = res.data.pirated === null;
 
-⚠ Status: Unauthorized Copy Found
-📌 Detection Method: ${res.data.method || "AI Scan + Watermark Match"}
-👤 Leaked By: ${res.data.piratedBy || "Unknown User"}
-📊 Confidence: ${res.data.confidence || 96}%
+      let output = "";
 
-❌ This content appears stolen or redistributed illegally.`
-        );
-      } else {
-        setMsg(
-`✅ ORIGINAL CONTENT VERIFIED
+      if (isPirated) {
+        setStatus("danger");
 
-📌 Detection Method: ${res.data.method || "AI Verification"}
-📊 Confidence: ${res.data.confidence || 98}%
+        output = `
+🚨 PIRATED CONTENT DETECTED
 
-✔ No piracy found. Content is safe.`
-        );
+📌 Method: ${res.data.method}
+👤 Leaked By: ${res.data.piratedBy || "Unknown"}
+📊 Confidence: ${res.data.confidence}%
+
+❌ This content is unauthorized or redistributed.
+`;
+      } 
+      else if (isUnknown) {
+        setStatus("warning");
+
+        output = `
+⚠ UNVERIFIED CONTENT
+
+📌 Method: ${res.data.method}
+📊 Confidence: ${res.data.confidence}%
+
+❗ No watermark found. Cannot verify ownership.
+`;
+      } 
+      else {
+        setStatus("success");
+
+        output = `
+✅ ORIGINAL / SAFE CONTENT
+
+📌 Method: ${res.data.method}
+📊 Confidence: ${res.data.confidence}%
+
+✔ No piracy detected.
+`;
       }
-    } catch {
-      setMsg("❌ Detection failed.");
+
+      setMsg(output);
+
+      // save to frontend logs
+      setLogs((prev) => [
+        {
+          file: file.name,
+          result: isPirated
+            ? "PIRATED"
+            : isUnknown
+            ? "UNKNOWN"
+            : "SAFE",
+          confidence: res.data.confidence
+        },
+        ...prev
+      ]);
+
+    } catch (err) {
+      setStatus("error");
+      setMsg("❌ Detection failed. Server error.");
     } finally {
       setLoading(false);
     }
   }
+
+  // ---------------- STATUS COLORS ----------------
+  const statusColor = {
+    success: "#16a34a",
+    danger: "#dc2626",
+    warning: "#f59e0b",
+    error: "#ef4444",
+    idle: "#334155"
+  };
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        background:
-          "linear-gradient(135deg,#eef4ff,#ffffff,#edf5ff)",
+        background: "#f1f5f9",
         padding: "30px",
-        fontFamily: "Arial, sans-serif"
+        fontFamily: "Arial"
       }}
     >
       <div
         style={{
-          maxWidth: "950px",
-          margin: "0 auto",
+          maxWidth: "1000px",
+          margin: "auto",
           background: "white",
-          borderRadius: "24px",
-          padding: "40px",
-          boxShadow:
-            "0 20px 50px rgba(0,0,0,0.08)"
+          borderRadius: "20px",
+          padding: "30px",
+          boxShadow: "0 10px 40px rgba(0,0,0,0.1)"
         }}
       >
-        <h1
-          style={{
-            fontSize: "54px",
-            margin: 0,
-            color: "#111827"
-          }}
-        >
-          EchoTag
+
+        {/* HEADER */}
+        <h1 style={{ fontSize: "40px", margin: 0 }}>
+          EchoTag AI
         </h1>
 
-        <p
-          style={{
-            color: "#475569",
-            fontSize: "18px",
-            marginTop: "10px"
-          }}
-        >
-          AI Anti-Piracy Protection using LSB + DCT
+        <p style={{ color: "#64748b" }}>
+          AI-powered piracy detection & watermark tracking system
         </p>
 
+        {/* UPLOAD */}
         <div
           style={{
-            border: "2px dashed #bfd3ff",
-            padding: "30px",
-            borderRadius: "18px",
-            background: "#f8fbff",
-            textAlign: "center",
-            marginTop: "25px",
-            marginBottom: "22px"
+            border: "2px dashed #cbd5e1",
+            padding: "20px",
+            borderRadius: "12px",
+            marginTop: "20px",
+            textAlign: "center"
           }}
         >
-          <p>Upload image or video</p>
-
-          <input
-            type="file"
-            onChange={(e) =>
-              setFile(e.target.files[0])
-            }
-          />
+          <input type="file" onChange={handleFile} />
         </div>
 
+        {/* PREVIEW */}
+        {preview && (
+          <div style={{ marginTop: "15px" }}>
+            <p>Preview:</p>
+            {file.type.startsWith("image") ? (
+              <img
+                src={preview}
+                alt="preview"
+                style={{ width: "200px", borderRadius: "10px" }}
+              />
+            ) : (
+              <video src={preview} width="250" controls />
+            )}
+          </div>
+        )}
+
+        {/* BUTTONS */}
         <div
           style={{
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
-            gap: "14px"
+            gap: "10px",
+            marginTop: "20px"
           }}
         >
           <button
             onClick={protectContent}
             disabled={loading}
             style={{
-              padding: "16px",
-              border: "none",
-              borderRadius: "16px",
+              padding: "14px",
               background: "#2563eb",
               color: "white",
-              fontWeight: "700",
-              cursor: "pointer"
+              border: "none",
+              borderRadius: "10px"
             }}
           >
             {loading ? "Processing..." : "Protect Content"}
@@ -181,33 +237,50 @@ export default function App() {
             onClick={checkPiracy}
             disabled={loading}
             style={{
-              padding: "16px",
-              border: "none",
-              borderRadius: "16px",
+              padding: "14px",
               background: "#111827",
               color: "white",
-              fontWeight: "700",
-              cursor: "pointer"
+              border: "none",
+              borderRadius: "10px"
             }}
           >
             {loading ? "Scanning..." : "Check Piracy"}
           </button>
         </div>
 
+        {/* OUTPUT */}
         <div
           style={{
-            marginTop: "24px",
+            marginTop: "20px",
+            padding: "20px",
             background: "#0f172a",
-            color: "#e2e8f0",
-            padding: "24px",
-            borderRadius: "18px",
-            minHeight: "220px",
-            whiteSpace: "pre-wrap",
-            fontFamily: "Consolas, monospace",
-            fontSize: "16px"
+            color: statusColor[status],
+            borderRadius: "12px",
+            whiteSpace: "pre-wrap"
           }}
         >
           {msg}
+        </div>
+
+        {/* DASHBOARD LOGS */}
+        <div style={{ marginTop: "25px" }}>
+          <h3>📊 Recent Scans</h3>
+
+          {logs.length === 0 ? (
+            <p>No scans yet.</p>
+          ) : (
+            logs.map((l, i) => (
+              <div
+                key={i}
+                style={{
+                  padding: "10px",
+                  borderBottom: "1px solid #e2e8f0"
+                }}
+              >
+                📁 {l.file} → {l.result} ({l.confidence}%)
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
